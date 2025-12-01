@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css">
+    <title>AuraCash – Transações</title>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="brand">
+                <span class="logo"></span>
+                AuraCash
+            </div>
+            <nav class="navbar">
+                <a href="tdashboard.html">Dashboard</a>
+                <a href="transacoes.html">Transações</a>
+                <a href="tcategorias.html">Categorias</a>
+                <a href="tmetas.html">Metas</a>
+                <a href="tcompartilhada.html">Compartilhada</a>
+                <a href="empreendedor.html">Empreendedor</a>
+                <a href="trelatorio.html">Relatórios</a>
+                <a href="tDicas.html">Dicas</a>
+                <a href="tConfiguracoes.html">Configurações</a>
+                <a href="#" id="logoutLink">Sair</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h3>Nova transação</h3>
+            <form id="txForm">
+                <div class="grid grid-3">
+                    <div>
+                        <label for="txType">Tipo</label>
+                        <select id="txType" name="type">
+                            <option value="expense">Despesa</option>
+                            <option value="income">Receita</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="txCategory">Categoria</label>
+                        <select id="txCategory" name="categoryId">
+                            <!-- Categorias serão carregadas aqui -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="txAmount">Valor (R$)</label>
+                        <input type="number" id="txAmount" name="amount" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div>
+                        <label for="txDate">Data</label>
+                        <input type="date" id="txDate" name="date" required>
+                    </div>
+                    <div>
+                        <label for="txDesc">Descrição</label>
+                        <input type="text" id="txDesc" name="desc" placeholder="ex: Mercado do mês">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txReceipt">Comprovante (imagem/pdf)</label>
+                    <input type="file" id="txReceipt" name="receipt" accept="image/*,.pdf">
+                </div>
+
+                <button class="btn btn-primary" type="submit">Salvar</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Transações</h3>
+                <button class="btn btn-danger" onclick="transacoesManager.limparTodasTransacoes()">
+                    🗑️ Limpar Todas as Transações
+                </button>
+            </div>
+            <table class="table" id="txTable">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                        <th>Descrição</th>
+                        <th>Comprovante</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Transações serão carregadas aqui -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/transacoes.js"></script>
+</body>
+</html>
