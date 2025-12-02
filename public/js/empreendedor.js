@@ -1,4 +1,4 @@
-// js/empreendedor.js - VERSÃO CORRIGIDA (sem duplo /api)
+// js/empreendedor.js - VERSÃO 100% CORRIGIDA
 
 class EmpreendedorManager {
     constructor() {
@@ -69,15 +69,41 @@ class EmpreendedorManager {
 
     async loadMateriais() {
         try {
-            // ✅ CORREÇÃO: '/materiais' em vez de '/api/materiais'
             this.materiais = await app.apiCall('/materiais', { method: 'GET' });
-            console.log('✅ Materiais carregados:', this.materiais);
+            console.log('✅ Materiais carregados (RAW):', this.materiais);
+            
+            // ✅ CONVERTE valores para número com segurança
+            this.materiais = this.materiais.map(m => ({
+                ...m,
+                valor_total: this.parseValue(m.valor_total),
+                quantidade: this.parseValue(m.quantidade)
+            }));
+            
+            console.log('✅ Materiais convertidos:', this.materiais);
             this.renderMateriais();
         } catch (error) {
             console.error('Erro ao carregar materiais:', error);
             this.materiais = [];
             this.renderMateriais();
         }
+    }
+
+    // ✅ FUNÇÃO PARA CONVERTER VALORES COM SEGURANÇA
+    parseValue(value) {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+            // Remove R$, pontos, converte vírgula para ponto
+            const cleaned = value.toString()
+                .replace('R$', '')
+                .replace(/\./g, '')
+                .replace(',', '.')
+                .trim();
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : num;
+        }
+        const num = parseFloat(value);
+        return isNaN(num) ? 0 : num;
     }
 
     loadMateriaisIntoSelect(select) {
@@ -88,24 +114,35 @@ class EmpreendedorManager {
         }
         select.innerHTML = `
             <option value="">Selecione o material</option>
-            ${this.materiais.map(m => `<option value="${m.id}">${m.nome} - R$ ${m.valor_total?.toFixed(2) || '0.00'}</option>`).join('')}
+            ${this.materiais.map(m => {
+                const valor = this.parseValue(m.valor_total);
+                return `<option value="${m.id}">${m.nome || m.name} - R$ ${valor.toFixed(2)}</option>`;
+            }).join('')}
         `;
     }
 
     renderMateriais() {
         const tbody = this.matTable.querySelector('tbody');
-        if (!this.materiais || !this.materiais.length) {
+        
+        // ✅ VERIFICAÇÃO MUITO SEGURA
+        if (!this.materiais || !Array.isArray(this.materiais) || this.materiais.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="small" style="text-align:center;">Nenhum material cadastrado.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = this.materiais.map(m => {
-            const valor = m.valor_total || 0;
-            const qtd = m.quantidade || 0;
+            // ✅ USA A FUNÇÃO parseValue PARA GARANTIR NÚMEROS
+            const valor = this.parseValue(m.valor_total || m.valor);
+            const qtd = this.parseValue(m.quantidade || m.qty);
             const custoUnit = qtd > 0 ? valor / qtd : 0;
+            const nome = m.nome || m.name || 'Sem nome';
+            
+            // ✅ DEBUG: Verifique os valores
+            console.log(`Material ${m.id}: valor=${valor} (${typeof valor}), qtd=${qtd} (${typeof qtd})`);
+            
             return `
                 <tr>
-                    <td>${m.nome || 'Sem nome'}</td>
+                    <td>${nome}</td>
                     <td>R$ ${valor.toFixed(2)}</td>
                     <td>${qtd.toFixed(4)}</td>
                     <td>R$ ${custoUnit.toFixed(4)}</td>
@@ -126,17 +163,26 @@ class EmpreendedorManager {
 
         Utils.showLoading();
         try {
-            // ✅ CORREÇÃO: '/materiais' em vez de '/api/materiais'
             const resultado = await app.apiCall('/materiais', {
                 method: 'POST',
                 body: JSON.stringify({
                     nome: name,
-                    valor_total: totalValue,
-                    quantidade: qty
+                    valor_total: totalValue,  // ✅ Já é número
+                    quantidade: qty          // ✅ Já é número
                 })
             });
 
-            console.log('✅ Material salvo no banco:', resultado);
+            console.log('✅ Material salvo (RAW):', resultado);
+            
+            // ✅ CONVERTE o resultado também
+            const materialConvertido = {
+                ...resultado,
+                valor_total: this.parseValue(resultado.valor_total),
+                quantidade: this.parseValue(resultado.quantidade)
+            };
+            
+            console.log('✅ Material convertido:', materialConvertido);
+            
             await this.loadMateriais();
             this.updateAllSelects();
             this.matForm.reset();
@@ -177,7 +223,6 @@ class EmpreendedorManager {
 
         Utils.showLoading();
         try {
-            // ✅ CORREÇÃO: '/calcular-custo' em vez de '/api/calcular-custo'
             const resultado = await app.apiCall('/calcular-custo', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -193,14 +238,16 @@ class EmpreendedorManager {
             
             let detalhesHTML = '';
             if (resultado.detalhes && resultado.detalhes.length > 0) {
-                detalhesHTML = '<ul>' + resultado.detalhes.map(d => 
-                    `<li>${d.nome}: R$ ${(d.custo_unitario || 0).toFixed(4)} × ${d.quantidade_usada} = R$ ${(d.custo_total || 0).toFixed(2)}</li>`
-                ).join('') + '</ul>';
+                detalhesHTML = '<ul>' + resultado.detalhes.map(d => {
+                    const custoUnit = this.parseValue(d.custo_unitario);
+                    const custoTotal = this.parseValue(d.custo_total);
+                    return `<li>${d.nome}: R$ ${custoUnit.toFixed(4)} × ${d.quantidade_usada} = R$ ${custoTotal.toFixed(2)}</li>`;
+                }).join('') + '</ul>';
             }
 
             resultContent.innerHTML = `
                 <p><strong>Produto:</strong> ${resultado.produto || productName}</p>
-                <p><strong>Custo Total:</strong> R$ ${(resultado.custo_total || 0).toFixed(2)}</p>
+                <p><strong>Custo Total:</strong> R$ ${this.parseValue(resultado.custo_total).toFixed(2)}</p>
                 ${detalhesHTML}
             `;
             resultDiv.style.display = 'block';
