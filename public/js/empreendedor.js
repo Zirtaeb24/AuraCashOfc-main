@@ -88,20 +88,38 @@ class EmpreendedorManager {
         }
     }
 
-    // ✅ FUNÇÃO PARA CONVERTER VALORES COM SEGURANÇA
+    
+    // ✅ FUNÇÃO CORRIGIDA - Converte strings MySQL para números
     parseValue(value) {
-        if (value === null || value === undefined) return 0;
-        if (typeof value === 'number') return value;
+        console.log('🔧 parseValue recebeu:', value, 'tipo:', typeof value);
+    
+        // Se for null/undefined, retorna 0
+        if (value === null || value === undefined) {
+        return 0;
+        }
+    
+        // Se já for número, retorna como está
+        if (typeof value === 'number') {
+        return value;
+        }
+    
+        // Se for string (como "70.00" ou "12.0000")
         if (typeof value === 'string') {
-            // Remove R$, pontos, converte vírgula para ponto
-            const cleaned = value.toString()
-                .replace('R$', '')
-                .replace(/\./g, '')
-                .replace(',', '.')
-                .trim();
-            const num = parseFloat(cleaned);
+            // Remove qualquer caractere não numérico exceto ponto e vírgula
+            const cleaned = value.replace(/[^\d.,]/g, '');
+        
+            // Converte vírgula para ponto (formato brasileiro)
+            const withDot = cleaned.replace(',', '.');
+        
+            // Converte para número
+            const num = parseFloat(withDot);
+        
+            console.log('🔧 String convertida:', value, '->', cleaned, '->', withDot, '->', num);
+        
             return isNaN(num) ? 0 : num;
         }
+    
+        // Para qualquer outro tipo, tenta converter
         const num = parseFloat(value);
         return isNaN(num) ? 0 : num;
     }
