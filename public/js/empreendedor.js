@@ -1,4 +1,4 @@
-// js/empreendedor.js - VERSÃO FUNCIONAL COM SALVAMENTO LOCAL POR USUÁRIO
+// js/empreendedor.js - VERSÃO CORRIGIDA COM API
 class EmpreendedorManager {
     constructor() {
         this.matForm = document.getElementById('matForm');
@@ -6,35 +6,28 @@ class EmpreendedorManager {
         this.prodForm = document.getElementById('prodForm');
         this.matUses = document.getElementById('matUses');
         this.materiais = [];
-        this.userId = this.getUserId();
         this.init();
     }
 
-    getUserId() {
-        // Pega o ID do usuário logado do localStorage
-        const userData = JSON.parse(localStorage.getItem('auraCash_user') || '{}');
-        return userData.id || 'default';
-    }
-
-    init() {
+    async init() {
         console.log('🚀 Inicializando módulo empreendedor...');
         this.setupForms();
-        this.loadMateriais();
+        await this.loadMateriais();
         this.addMaterialUseRow();
     }
 
     setupForms() {
         if (this.matForm) {
-            this.matForm.addEventListener('submit', (e) => {
+            this.matForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                this.saveMaterial();
+                await this.saveMaterial();
             });
         }
 
         if (this.prodForm) {
-            this.prodForm.addEventListener('submit', (e) => {
+            this.prodForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                this.calcularCusto();
+                await this.calcularCusto();
             });
         }
 
@@ -73,11 +66,11 @@ class EmpreendedorManager {
         this.loadMateriaisIntoSelect(row.querySelector('select'));
     }
 
-    loadMateriais() {
+    async loadMateriais() {
         try {
-            // ✅ CORREÇÃO: Salva materiais por usuário
-            const allMateriais = JSON.parse(localStorage.getItem('auraCash_materiais') || '{}');
-            this.materiais = allMateriais[this.userId] || [];
+            // ✅ USANDO API (filtrando por usuário logado)
+            this.materiais = await app.apiCall('/api/materiais', { method: 'GET' });
+            console.log('✅ Materiais carregados:', this.materiais);
             this.renderMateriais();
         } catch (error) {
             console.error('Erro ao carregar materiais:', error);
@@ -94,7 +87,7 @@ class EmpreendedorManager {
         }
         select.innerHTML = `
             <option value="">Selecione o material</option>
-            ${this.materiais.map(m => `<option value="${m.id}">${m.name} - R$ ${m.totalValue.toFixed(2)}</option>`).join('')}
+            ${this.materiais.map(m => `<option value="${m.id}">${m.nome} - R$ ${m.valor_total.toFixed(2)}</option>`).join('')}
         `;
     }
 
@@ -106,19 +99,19 @@ class EmpreendedorManager {
         }
 
         tbody.innerHTML = this.materiais.map(m => {
-            const custoUnit = m.qty > 0 ? m.totalValue / m.qty : 0;
+            const custoUnit = m.quantidade > 0 ? m.valor_total / m.quantidade : 0;
             return `
                 <tr>
-                    <td>${m.name}</td>
-                    <td>R$ ${m.totalValue.toFixed(2)}</td>
-                    <td>${m.qty.toFixed(4)}</td>
-                    <td>R$ ${custoUnit.toFixed(2)}</td>
+                    <td>${m.nome}</td>
+                    <td>R$ ${m.valor_total.toFixed(2)}</td>
+                    <td>${m.quantidade.toFixed(4)}</td>
+                    <td>R$ ${custoUnit.toFixed(4)}</td>
                 </tr>
             `;
         }).join('');
     }
 
-    saveMaterial() {
+    async saveMaterial() {
         const name = document.getElementById('materialName').value.trim();
         const totalValue = parseFloat(document.getElementById('materialValue').value);
         const qty = parseFloat(document.getElementById('materialQty').value);
@@ -128,27 +121,29 @@ class EmpreendedorManager {
             return;
         }
 
-        const newMaterial = {
-            id: Date.now(),
-            name,
-            totalValue,
-            qty
-        };
+        Utils.showLoading();
+        try {
+            // ✅ SALVANDO VIA API (usuário específico)
+            const resultado = await app.apiCall('/api/materiais', {
+                method: 'POST',
+                body: JSON.stringify({
+                    nome: name,
+                    valor_total: totalValue,
+                    quantidade: qty
+                })
+            });
 
-        // ✅ CORREÇÃO: Salva materiais por usuário
-        const allMateriais = JSON.parse(localStorage.getItem('auraCash_materiais') || '{}');
-        if (!allMateriais[this.userId]) {
-            allMateriais[this.userId] = [];
+            console.log('✅ Material salvo no banco:', resultado);
+            await this.loadMateriais(); // Recarrega da API
+            this.updateAllSelects();
+            this.matForm.reset();
+            Utils.showMessage('✅ Material salvo com sucesso!', 'success');
+        } catch (error) {
+            console.error('❌ Erro ao salvar material:', error);
+            Utils.showMessage('❌ Erro ao salvar material', 'error');
+        } finally {
+            Utils.hideLoading();
         }
-        allMateriais[this.userId].push(newMaterial);
-        localStorage.setItem('auraCash_materiais', JSON.stringify(allMateriais));
-
-        this.materiais.push(newMaterial);
-        this.renderMateriais();
-        this.updateAllSelects();
-
-        this.matForm.reset();
-        alert('Material salvo com sucesso!');
     }
 
     updateAllSelects() {
@@ -156,7 +151,7 @@ class EmpreendedorManager {
         selects.forEach(sel => this.loadMateriaisIntoSelect(sel));
     }
 
-    calcularCusto() {
+    async calcularCusto() {
         const productName = document.getElementById('productName').value.trim();
         if (!productName) {
             alert('Digite o nome do produto!');
@@ -168,7 +163,7 @@ class EmpreendedorManager {
                 const materialId = row.querySelector('select')?.value;
                 const qtyUsed = parseFloat(row.querySelector('input')?.value);
                 if (!materialId || qtyUsed <= 0) return null;
-                return { materialId: parseInt(materialId), qtyUsed };
+                return { material_id: parseInt(materialId), quantidade_usada: qtyUsed };
             })
             .filter(x => x !== null);
 
@@ -177,28 +172,43 @@ class EmpreendedorManager {
             return;
         }
 
-        let custoTotal = 0;
-        const detalhes = [];
+        Utils.showLoading();
+        try {
+            // ✅ CALCULANDO VIA API
+            const resultado = await app.apiCall('/api/calcular-custo', {
+                method: 'POST',
+                body: JSON.stringify({
+                    nome_produto: productName,
+                    materiais: materialUses
+                })
+            });
 
-        materialUses.forEach(use => {
-            const mat = this.materiais.find(m => m.id === use.materialId);
-            if (!mat) return;
-            const custoUnit = mat.totalValue / mat.qty;
-            const custoMat = custoUnit * use.qtyUsed;
-            custoTotal += custoMat;
-            detalhes.push({ nome: mat.name, unit: custoUnit, qtd: use.qtyUsed, total: custoMat });
-        });
+            console.log('✅ Custo calculado:', resultado);
 
-        const resultDiv = document.getElementById('result');
-        const resultContent = document.getElementById('resultContent');
-        resultContent.innerHTML = `
-            <p><strong>Produto:</strong> ${productName}</p>
-            <p><strong>Custo Total:</strong> R$ ${custoTotal.toFixed(2)}</p>
-            <ul>
-                ${detalhes.map(d => `<li>${d.nome}: R$ ${d.unit.toFixed(2)} × ${d.qtd} = R$ ${d.total.toFixed(2)}</li>`).join('')}
-            </ul>
-        `;
-        resultDiv.style.display = 'block';
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            let detalhesHTML = '';
+            if (resultado.detalhes && resultado.detalhes.length > 0) {
+                detalhesHTML = '<ul>' + resultado.detalhes.map(d => 
+                    `<li>${d.nome}: R$ ${d.custo_unitario.toFixed(4)} × ${d.quantidade_usada} = R$ ${d.custo_total.toFixed(2)}</li>`
+                ).join('') + '</ul>';
+            }
+
+            resultContent.innerHTML = `
+                <p><strong>Produto:</strong> ${resultado.produto}</p>
+                <p><strong>Custo Total:</strong> R$ ${resultado.custo_total.toFixed(2)}</p>
+                ${detalhesHTML}
+            `;
+            resultDiv.style.display = 'block';
+            
+            Utils.showMessage('✅ Custo calculado com sucesso!', 'success');
+        } catch (error) {
+            console.error('❌ Erro ao calcular custo:', error);
+            Utils.showMessage('❌ Erro ao calcular custo', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
     }
 }
 
