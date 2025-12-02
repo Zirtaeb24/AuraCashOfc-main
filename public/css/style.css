@@ -374,3 +374,44 @@ hr {
     padding: 10px
   }
 }
+/* ===== FIXES DE RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+
+  .header {
+    padding: 10px 0;
+  }
+
+  .nav {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .navbar a {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .container {
+    padding: 14px !important;
+  }
+
+  .brand {
+    font-size: 18px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand .logo {
+    width: 28px;
+    height: 28px;
+  }
+}
+
