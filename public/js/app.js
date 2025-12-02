@@ -1,7 +1,7 @@
 // js/app.js - Arquivo principal do AuraCash COM CATEGORIAS PADRÃO
 class AuraCash {
     constructor() {
-        this.API_BASE = 'http://localhost:3000/api';
+        this.API_BASE = window.location.origin + '/api';
         this.currentUser = this.getCurrentUser();
         this.init();
     }
