@@ -1,4 +1,5 @@
-// js/empreendedor.js - VERSÃO CORRIGIDA COM API
+// js/empreendedor.js - VERSÃO CORRIGIDA (sem duplo /api)
+
 class EmpreendedorManager {
     constructor() {
         this.matForm = document.getElementById('matForm');
@@ -68,8 +69,8 @@ class EmpreendedorManager {
 
     async loadMateriais() {
         try {
-            // ✅ USANDO API (filtrando por usuário logado)
-            this.materiais = await app.apiCall('/api/materiais', { method: 'GET' });
+            // ✅ CORREÇÃO: '/materiais' em vez de '/api/materiais'
+            this.materiais = await app.apiCall('/materiais', { method: 'GET' });
             console.log('✅ Materiais carregados:', this.materiais);
             this.renderMateriais();
         } catch (error) {
@@ -81,30 +82,32 @@ class EmpreendedorManager {
 
     loadMateriaisIntoSelect(select) {
         if (!select) return;
-        if (!this.materiais.length) {
+        if (!this.materiais || !this.materiais.length) {
             select.innerHTML = `<option value="">⚠️ Nenhum material cadastrado</option>`;
             return;
         }
         select.innerHTML = `
             <option value="">Selecione o material</option>
-            ${this.materiais.map(m => `<option value="${m.id}">${m.nome} - R$ ${m.valor_total.toFixed(2)}</option>`).join('')}
+            ${this.materiais.map(m => `<option value="${m.id}">${m.nome} - R$ ${m.valor_total?.toFixed(2) || '0.00'}</option>`).join('')}
         `;
     }
 
     renderMateriais() {
         const tbody = this.matTable.querySelector('tbody');
-        if (!this.materiais.length) {
+        if (!this.materiais || !this.materiais.length) {
             tbody.innerHTML = `<tr><td colspan="4" class="small" style="text-align:center;">Nenhum material cadastrado.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = this.materiais.map(m => {
-            const custoUnit = m.quantidade > 0 ? m.valor_total / m.quantidade : 0;
+            const valor = m.valor_total || 0;
+            const qtd = m.quantidade || 0;
+            const custoUnit = qtd > 0 ? valor / qtd : 0;
             return `
                 <tr>
-                    <td>${m.nome}</td>
-                    <td>R$ ${m.valor_total.toFixed(2)}</td>
-                    <td>${m.quantidade.toFixed(4)}</td>
+                    <td>${m.nome || 'Sem nome'}</td>
+                    <td>R$ ${valor.toFixed(2)}</td>
+                    <td>${qtd.toFixed(4)}</td>
                     <td>R$ ${custoUnit.toFixed(4)}</td>
                 </tr>
             `;
@@ -123,8 +126,8 @@ class EmpreendedorManager {
 
         Utils.showLoading();
         try {
-            // ✅ SALVANDO VIA API (usuário específico)
-            const resultado = await app.apiCall('/api/materiais', {
+            // ✅ CORREÇÃO: '/materiais' em vez de '/api/materiais'
+            const resultado = await app.apiCall('/materiais', {
                 method: 'POST',
                 body: JSON.stringify({
                     nome: name,
@@ -134,7 +137,7 @@ class EmpreendedorManager {
             });
 
             console.log('✅ Material salvo no banco:', resultado);
-            await this.loadMateriais(); // Recarrega da API
+            await this.loadMateriais();
             this.updateAllSelects();
             this.matForm.reset();
             Utils.showMessage('✅ Material salvo com sucesso!', 'success');
@@ -174,8 +177,8 @@ class EmpreendedorManager {
 
         Utils.showLoading();
         try {
-            // ✅ CALCULANDO VIA API
-            const resultado = await app.apiCall('/api/calcular-custo', {
+            // ✅ CORREÇÃO: '/calcular-custo' em vez de '/api/calcular-custo'
+            const resultado = await app.apiCall('/calcular-custo', {
                 method: 'POST',
                 body: JSON.stringify({
                     nome_produto: productName,
@@ -191,13 +194,13 @@ class EmpreendedorManager {
             let detalhesHTML = '';
             if (resultado.detalhes && resultado.detalhes.length > 0) {
                 detalhesHTML = '<ul>' + resultado.detalhes.map(d => 
-                    `<li>${d.nome}: R$ ${d.custo_unitario.toFixed(4)} × ${d.quantidade_usada} = R$ ${d.custo_total.toFixed(2)}</li>`
+                    `<li>${d.nome}: R$ ${(d.custo_unitario || 0).toFixed(4)} × ${d.quantidade_usada} = R$ ${(d.custo_total || 0).toFixed(2)}</li>`
                 ).join('') + '</ul>';
             }
 
             resultContent.innerHTML = `
-                <p><strong>Produto:</strong> ${resultado.produto}</p>
-                <p><strong>Custo Total:</strong> R$ ${resultado.custo_total.toFixed(2)}</p>
+                <p><strong>Produto:</strong> ${resultado.produto || productName}</p>
+                <p><strong>Custo Total:</strong> R$ ${(resultado.custo_total || 0).toFixed(2)}</p>
                 ${detalhesHTML}
             `;
             resultDiv.style.display = 'block';
