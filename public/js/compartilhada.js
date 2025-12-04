@@ -205,7 +205,7 @@ class CompartilhadaManager {
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button onclick="compartilhadaManager.openAccount('${account.id}')" class="btn btn-primary">
+                    <button onclick="compartilhadaManager.openAccount('${account.id}', '${account.codigo}')" class="btn btn-primary">
                         🔓 Abrir Conta
                     </button>
                     <button onclick="compartilhadaManager.shareLink('${account.codigo}')" class="btn btn-accent">
