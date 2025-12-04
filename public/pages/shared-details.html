@@ -32,56 +32,41 @@
 
     <div class="container">
         <!-- Cabeçalho com informações da conta -->
-        <div class="card account-header-card" style="margin-bottom: 20px;">
+        <div class="card" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h1 id="accountName">Carregando...</h1>
-                    <p class="account-code-display">Código: <span id="accountCode">...</span></p>
-                    <div class="account-meta" style="margin-top: 10px;">
+                    <p class="small">Código: <span id="accountCode">...</span></p>
+                    <div style="margin-top: 10px;">
                         <span class="badge" id="ownerBadge">👑 Dono: ...</span>
                         <span class="badge" id="membersBadge">👥 <span id="membersCount">0</span> membros</span>
                     </div>
                 </div>
 
                 <div style="text-align: right;">
-                    <div style="font-size: 24px; margin-bottom: 5px; font-weight: 800;" id="totalBalance">R$ 0,00</div>
+                    <div style="font-size: 24px; margin-bottom: 5px;" id="totalBalance">R$ 0,00</div>
                     <p class="small">Saldo total</p>
-                </div>
-            </div>
-
-            <div class="account-stats" style="margin-top: 20px;">
-                <div class="account-stat-card">
-                    <h3>Total Despesas</h3>
-                    <p style="color: var(--danger);" id="totalExpensesMini">R$ 0,00</p>
-                </div>
-                <div class="account-stat-card">
-                    <h3>Total Receitas</h3>
-                    <p style="color: var(--ok);" id="totalIncomesMini">R$ 0,00</p>
-                </div>
-                <div class="account-stat-card">
-                    <h3>Saldo Total</h3>
-                    <p style="color: var(--accent);" id="totalBalanceMini">R$ 0,00</p>
                 </div>
             </div>
         </div>
 
         <!-- Abas de navegação -->
-        <div class="shared-tabs">
-            <button class="tab-btn active" data-tab="transactions" onclick="sharedDetails.showTab('transactions')">💰
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto;">
+            <button class="btn" data-tab="transactions" onclick="sharedDetails.showTab('transactions')">💰
                 Transações</button>
-            <button class="tab-btn" data-tab="members" onclick="sharedDetails.showTab('members')">👥 Membros</button>
-            <button class="tab-btn" data-tab="add" onclick="sharedDetails.showTab('add')">➕ Nova Transação</button>
+            <button class="btn" data-tab="members" onclick="sharedDetails.showTab('members')">👥 Membros</button>
+            <button class="btn" data-tab="add" onclick="sharedDetails.showTab('add')">➕ Nova Transação</button>
         </div>
 
         <!-- Conteúdo das abas -->
         <div id="tabContent">
             <!-- Aba 1: Transações (padrão) -->
-            <div id="transactions-tab" class="tab-content-pane active">
+            <div id="transactions-tab" class="tab-content">
                 <div class="card">
                     <h3>📋 Histórico de Transações</h3>
 
                     <div style="margin-bottom: 20px;">
-                        <table class="table transactions-table">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Descrição</th>
@@ -98,7 +83,7 @@
                         </table>
                     </div>
 
-                    <div id="noTransactions" class="empty-state">
+                    <div id="noTransactions" style="text-align: center; padding: 40px; color: #666;">
                         <p style="font-size: 48px; margin-bottom: 10px;">📭</p>
                         <p>Nenhuma transação registrada nesta conta.</p>
                         <p class="small">Adicione a primeira transação clicando em "Nova Transação".</p>
@@ -107,47 +92,47 @@
             </div>
 
             <!-- Aba 2: Membros -->
-            <div id="members-tab" class="tab-content-pane">
+            <div id="members-tab" class="tab-content" style="display: none;">
                 <div class="card">
                     <h3>👥 Membros da Conta</h3>
 
-                    <div id="membersList" class="members-grid" style="margin-bottom: 30px;">
+                    <div id="membersList" style="margin-bottom: 30px;">
                         <!-- Membros serão carregados aqui -->
                     </div>
                 </div>
             </div>
 
             <!-- Aba 3: Nova Transação -->
-            <div id="add-tab" class="tab-content-pane">
-                <div class="card transaction-form-card">
+            <div id="add-tab" class="tab-content" style="display: none;">
+                <div class="card">
                     <h3>➕ Adicionar Transação Compartilhada</h3>
 
                     <form id="addTransactionForm">
-                        <div class="form-group">
+                        <div style="margin-bottom: 15px;">
                             <label>Descrição *</label>
                             <input type="text" id="transactionDesc" required placeholder="Ex: Aluguel, Supermercado...">
                         </div>
 
-                        <div class="form-grid-2">
-                            <div class="form-group">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
                                 <label>Tipo *</label>
                                 <select id="transactionType" required>
                                     <option value="expense">💸 Despesa</option>
                                     <option value="income">💰 Receita</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div>
                                 <label>Valor (R$) *</label>
                                 <input type="number" id="transactionAmount" step="0.01" required>
                             </div>
                         </div>
 
-                        <div class="form-grid-2">
-                            <div class="form-group">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
                                 <label>Data *</label>
                                 <input type="date" id="transactionDate" required>
                             </div>
-                            <div class="form-group">
+                            <div>
                                 <label>Categoria *</label>
                                 <select id="transactionCategory" required>
                                     <option value="">Selecione...</option>
@@ -156,7 +141,7 @@
                             </div>
                         </div>
 
-                        <div class="form-actions">
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
                             <button type="submit" class="btn btn-primary">💾 Salvar Transação</button>
                             <button type="button" onclick="sharedDetails.cancelTransaction()" class="btn">
                                 ❌ Cancelar
@@ -170,18 +155,18 @@
         <!-- Estatísticas -->
         <div class="card" style="margin-top: 20px;">
             <h3>📊 Estatísticas da Conta</h3>
-            <div class="stats-grid">
-                <div class="stat-item">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
                     <h4>Total de Despesas</h4>
-                    <p style="color: var(--danger);" id="totalExpenses">R$ 0,00</p>
+                    <p style="font-size: 24px; color: #ff4757;" id="totalExpenses">R$ 0,00</p>
                 </div>
-                <div class="stat-item">
+                <div>
                     <h4>Total de Receitas</h4>
-                    <p style="color: var(--ok);" id="totalIncomes">R$ 0,00</p>
+                    <p style="font-size: 24px; color: #2ed573;" id="totalIncomes">R$ 0,00</p>
                 </div>
-                <div class="stat-item">
+                <div>
                     <h4>Saldo por Membro</h4>
-                    <p style="color: var(--accent);" id="balancePerMember">R$ 0,00</p>
+                    <p style="font-size: 24px;" id="balancePerMember">R$ 0,00</p>
                 </div>
             </div>
         </div>
@@ -191,4 +176,5 @@
     <script src="../js/utils.js"></script>
     <script src="../js/shared-details.js"></script>
 </body>
+
 </html>
