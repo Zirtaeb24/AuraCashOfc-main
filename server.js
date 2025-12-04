@@ -115,6 +115,19 @@ async function criarTabelas() {
             quantidade_usada DECIMAL(10,4) NOT NULL,
             custo_material DECIMAL(10,2) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+
+        `CREATE TABLE IF NOT EXISTS transacoes_compartilhadas (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            conta_id INT NOT NULL,
+            descricao TEXT,
+            tipo ENUM('income', 'expense') NOT NULL,
+            valor DECIMAL(10,2) NOT NULL,
+            data DATE NOT NULL,
+            categoria_id INT,
+            usuario_id INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (conta_id) REFERENCES contas_compartilhadas(id) ON DELETE CASCADE
         )`
     ];
 
@@ -1000,6 +1013,344 @@ app.post('/api/calcular-custo', autenticarToken, async (req, res) => {
 
     } catch (error) {
         console.error('Erro ao calcular custo:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// ROTA CORRIGIDA - VERSÃO SIMPLES
+app.get('/api/shared-accounts/:id/members', autenticarToken, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        console.log(`👥 [USER ${req.user.id}] Buscando membros da conta ${id}`);
+        
+        if (!db) {
+            return res.status(500).json({ error: 'Banco de dados não disponível' });
+        }
+        
+        // 1. Verificar se conta existe e usuário tem acesso
+        const [conta] = await db.execute(
+            'SELECT usuario_id FROM contas_compartilhadas WHERE id = ?',
+            [id]
+        );
+        
+        if (conta.length === 0) {
+            return res.status(404).json({ error: 'Conta não encontrada' });
+        }
+        
+        const donoId = conta[0].usuario_id;
+        const usuarioId = req.user.id;
+        
+        // Verificar se usuário tem acesso (é dono ou membro)
+        if (donoId != usuarioId) {
+            const [membro] = await db.execute(
+                'SELECT * FROM membros_compartilhada WHERE conta_compartilhada_id = ? AND usuario_id = ?',
+                [id, usuarioId]
+            );
+            
+            if (membro.length === 0) {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+        }
+        
+        // 2. Buscar dono
+        const [dono] = await db.execute(
+            'SELECT id as usuario_id, nome, email FROM usuarios WHERE id = ?',
+            [donoId]
+        );
+        
+        const membros = [];
+        
+        // 3. Adicionar dono
+        if (dono.length > 0) {
+            membros.push({
+                ...dono[0],
+                is_owner: true
+            });
+        }
+        
+        // 4. Buscar outros membros (exceto dono)
+        const [outrosMembros] = await db.execute(`
+            SELECT u.id as usuario_id, u.nome, u.email
+            FROM membros_compartilhada m
+            INNER JOIN usuarios u ON m.usuario_id = u.id
+            WHERE m.conta_compartilhada_id = ? AND u.id != ?
+            ORDER BY u.nome
+        `, [id, donoId]);
+        
+        // 5. Adicionar outros membros
+        outrosMembros.forEach(membro => {
+            membros.push({
+                ...membro,
+                is_owner: false
+            });
+        });
+        
+        console.log(`✅ ${membros.length} membros retornados`);
+        res.json(membros);
+        
+    } catch (error) {
+        console.error('❌ Erro ao buscar membros:', error);
+        res.status(500).json({ error: 'Erro interno: ' + error.message });
+    }
+});
+
+// GET transações de uma conta compartilhada
+app.get('/api/shared-accounts/:id/transactions', autenticarToken, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        console.log(`💰 [USER ${req.user.id}] Buscando transações da conta: ${id}`);
+        
+        // Verificar se banco está disponível
+        if (!db) {
+            console.error('❌ Banco de dados não disponível');
+            return res.status(500).json({ error: 'Banco de dados não disponível' });
+        }
+        
+        // Verificar acesso
+        const [access] = await db.execute(
+            `SELECT * FROM membros_compartilhada 
+             WHERE conta_compartilhada_id = ? AND usuario_id = ?`,
+            [id, req.user.id]
+        );
+        
+        const [conta] = await db.execute(
+            'SELECT * FROM contas_compartilhadas WHERE id = ?',
+            [id]
+        );
+        
+        if (conta.length === 0) {
+            console.log('❌ Conta não encontrada');
+            return res.status(404).json({ error: 'Conta não encontrada' });
+        }
+        
+        if (conta[0].usuario_id != req.user.id && access.length === 0) {
+            console.log('❌ Acesso negado para usuário:', req.user.id);
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+        
+        // Buscar transações
+        const [transacoes] = await db.execute(`
+            SELECT t.*, c.nome as categoria_nome, u.nome as usuario_nome
+            FROM transacoes_compartilhadas t
+            LEFT JOIN categorias c ON t.categoria_id = c.id
+            LEFT JOIN usuarios u ON t.usuario_id = u.id
+            WHERE t.conta_id = ?
+            ORDER BY t.data DESC, t.created_at DESC
+        `, [id]);
+        
+        console.log(`✅ ${transacoes.length} transações encontradas para conta ${id}`);
+        res.json(transacoes);
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar transações:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// POST criar transação compartilhada
+app.post('/api/shared-accounts/:id/transactions', autenticarToken, async (req, res) => {
+    const { id } = req.params;
+    const { descricao, tipo, valor, data, categoria_id } = req.body;
+    
+    try {
+        console.log(`➕ [USER ${req.user.id}] Criando transação na conta ${id}:`, { 
+            descricao, 
+            tipo, 
+            valor: parseFloat(valor).toFixed(2),
+            data 
+        });
+        
+        // Validar dados
+        if (!descricao || !tipo || !valor || !data || !categoria_id) {
+            return res.status(400).json({ error: 'Dados incompletos' });
+        }
+        
+        if (parseFloat(valor) <= 0) {
+            return res.status(400).json({ error: 'Valor deve ser maior que zero' });
+        }
+        
+        // Verificar se banco está disponível
+        if (!db) {
+            console.error('❌ Banco de dados não disponível');
+            return res.status(500).json({ error: 'Banco de dados não disponível' });
+        }
+        
+        // Verificar acesso
+        const [access] = await db.execute(
+            `SELECT * FROM membros_compartilhada 
+             WHERE conta_compartilhada_id = ? AND usuario_id = ?`,
+            [id, req.user.id]
+        );
+        
+        const [conta] = await db.execute(
+            'SELECT * FROM contas_compartilhadas WHERE id = ?',
+            [id]
+        );
+        
+        if (conta.length === 0) {
+            console.log('❌ Conta não encontrada');
+            return res.status(404).json({ error: 'Conta não encontrada' });
+        }
+        
+        if (conta[0].usuario_id != req.user.id && access.length === 0) {
+            console.log('❌ Acesso negado para usuário:', req.user.id);
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+        
+        // Verificar se categoria existe
+        const [categoria] = await db.execute(
+            'SELECT * FROM categorias WHERE id = ? AND usuario_id = ?',
+            [categoria_id, req.user.id]
+        );
+        
+        if (categoria.length === 0) {
+            console.log('❌ Categoria não encontrada ou não pertence ao usuário');
+            return res.status(404).json({ error: 'Categoria não encontrada' });
+        }
+        
+        // Inserir transação
+        const [result] = await db.execute(
+            `INSERT INTO transacoes_compartilhadas 
+             (conta_id, descricao, tipo, valor, data, categoria_id, usuario_id) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [id, descricao, tipo, parseFloat(valor), data, categoria_id, req.user.id]
+        );
+        
+        // Buscar transação criada
+        const [newRow] = await db.execute(`
+            SELECT t.*, c.nome as categoria_nome, u.nome as usuario_nome
+            FROM transacoes_compartilhadas t
+            LEFT JOIN categorias c ON t.categoria_id = c.id
+            LEFT JOIN usuarios u ON t.usuario_id = u.id
+            WHERE t.id = ?
+        `, [result.insertId]);
+        
+        console.log('✅ Transação criada, ID:', result.insertId);
+        
+        // Retornar transação criada
+        res.status(201).json(newRow[0]);
+        
+    } catch (error) {
+        console.error('❌ Erro ao criar transação:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// DELETE transação compartilhada
+app.delete('/api/shared-accounts/:contaId/transactions/:transId', autenticarToken, async (req, res) => {
+    const { contaId, transId } = req.params;
+    
+    try {
+        console.log(`🗑️ [USER ${req.user.id}] Deletando transação ${transId} da conta ${contaId}`);
+        
+        // Verificar se banco está disponível
+        if (!db) {
+            console.error('❌ Banco de dados não disponível');
+            return res.status(500).json({ error: 'Banco de dados não disponível' });
+        }
+        
+        // Verificar acesso
+        const [access] = await db.execute(
+            `SELECT * FROM membros_compartilhada 
+             WHERE conta_compartilhada_id = ? AND usuario_id = ?`,
+            [contaId, req.user.id]
+        );
+        
+        const [conta] = await db.execute(
+            'SELECT * FROM contas_compartilhadas WHERE id = ?',
+            [contaId]
+        );
+        
+        if (conta.length === 0) {
+            console.log('❌ Conta não encontrada');
+            return res.status(404).json({ error: 'Conta não encontrada' });
+        }
+        
+        if (conta[0].usuario_id != req.user.id && access.length === 0) {
+            console.log('❌ Acesso negado para usuário:', req.user.id);
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+        
+        // Buscar transação
+        const [trans] = await db.execute(
+            'SELECT * FROM transacoes_compartilhadas WHERE id = ? AND conta_id = ?',
+            [transId, contaId]
+        );
+        
+        if (trans.length === 0) {
+            console.log('❌ Transação não encontrada');
+            return res.status(404).json({ error: 'Transação não encontrada' });
+        }
+        
+        // Verificar se é o criador ou dono da conta
+        if (trans[0].usuario_id != req.user.id && conta[0].usuario_id != req.user.id) {
+            console.log('❌ Permissão negada: não é o criador nem dono');
+            return res.status(403).json({ error: 'Você só pode deletar suas próprias transações' });
+        }
+        
+        // Deletar
+        await db.execute(
+            'DELETE FROM transacoes_compartilhadas WHERE id = ?',
+            [transId]
+        );
+        
+        console.log('✅ Transação deletada com sucesso');
+        res.json({ message: 'Transação deletada com sucesso' });
+        
+    } catch (error) {
+        console.error('❌ Erro ao deletar transação:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// PUT atualizar nome da conta compartilhada (opcional - para futuro)
+app.put('/api/shared-accounts/:id', autenticarToken, async (req, res) => {
+    const { id } = req.params;
+    const { nome } = req.body;
+    
+    try {
+        console.log(`✏️ [USER ${req.user.id}] Atualizando nome da conta ${id} para: ${nome}`);
+        
+        if (!nome || nome.trim() === '') {
+            return res.status(400).json({ error: 'Nome é obrigatório' });
+        }
+        
+        // Verificar se banco está disponível
+        if (!db) {
+            console.error('❌ Banco de dados não disponível');
+            return res.status(500).json({ error: 'Banco de dados não disponível' });
+        }
+        
+        // Verificar se conta existe
+        const [conta] = await db.execute(
+            'SELECT * FROM contas_compartilhadas WHERE id = ?',
+            [id]
+        );
+        
+        if (conta.length === 0) {
+            console.log('❌ Conta não encontrada');
+            return res.status(404).json({ error: 'Conta não encontrada' });
+        }
+        
+        // Verificar se é o dono
+        if (conta[0].usuario_id != req.user.id) {
+            console.log('❌ Apenas o dono pode editar a conta');
+            return res.status(403).json({ error: 'Apenas o dono pode editar a conta' });
+        }
+        
+        // Atualizar
+        await db.execute(
+            'UPDATE contas_compartilhadas SET nome = ? WHERE id = ?',
+            [nome.trim(), id]
+        );
+        
+        console.log('✅ Nome da conta atualizado');
+        res.json({ message: 'Nome atualizado com sucesso', nome: nome.trim() });
+        
+    } catch (error) {
+        console.error('❌ Erro ao atualizar conta:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
