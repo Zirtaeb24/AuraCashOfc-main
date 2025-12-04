@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css">
+    <title>AuraCash – Detalhes da Conta Compartilhada</title>
+</head>
+
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="brand">
+                <span class="logo"></span>
+                AuraCash
+            </div>
+            <nav class="navbar">
+                <a href="tdashboard.html">Dashboard</a>
+                <a href="transacoes.html">Transações</a>
+                <a href="tcategorias.html">Categorias</a>
+                <a href="tmetas.html">Metas</a>
+                <a href="tcompartilhada.html">Compartilhada</a>
+                <a href="empreendedor.html">Empreendedor</a>
+                <a href="trelatorio.html">Relatórios</a>
+                <a href="tDicas.html">Dicas</a>
+                <a href="tConfiguracoes.html">Configurações</a>
+                <a href="#" id="logoutLink">Sair</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Cabeçalho com informações da conta -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 id="accountName">Carregando...</h1>
+                    <p class="small">Código: <span id="accountCode">...</span></p>
+                    <div style="margin-top: 10px;">
+                        <span class="badge" id="ownerBadge">👑 Dono: ...</span>
+                        <span class="badge" id="membersBadge">👥 <span id="membersCount">0</span> membros</span>
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <div style="font-size: 24px; margin-bottom: 5px;" id="totalBalance">R$ 0,00</div>
+                    <p class="small">Saldo total</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abas de navegação -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto;">
+            <button class="btn" data-tab="transactions" onclick="sharedDetails.showTab('transactions')">💰
+                Transações</button>
+            <button class="btn" data-tab="members" onclick="sharedDetails.showTab('members')">👥 Membros</button>
+            <button class="btn" data-tab="add" onclick="sharedDetails.showTab('add')">➕ Nova Transação</button>
+        </div>
+
+        <!-- Conteúdo das abas -->
+        <div id="tabContent">
+            <!-- Aba 1: Transações (padrão) -->
+            <div id="transactions-tab" class="tab-content">
+                <div class="card">
+                    <h3>📋 Histórico de Transações</h3>
+
+                    <div style="margin-bottom: 20px;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Data</th>
+                                    <th>Membro</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsList">
+                                <!-- Transações serão carregadas aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="noTransactions" style="text-align: center; padding: 40px; color: #666;">
+                        <p style="font-size: 48px; margin-bottom: 10px;">📭</p>
+                        <p>Nenhuma transação registrada nesta conta.</p>
+                        <p class="small">Adicione a primeira transação clicando em "Nova Transação".</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba 2: Membros -->
+            <div id="members-tab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h3>👥 Membros da Conta</h3>
+
+                    <div id="membersList" style="margin-bottom: 30px;">
+                        <!-- Membros serão carregados aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba 3: Nova Transação -->
+            <div id="add-tab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h3>➕ Adicionar Transação Compartilhada</h3>
+
+                    <form id="addTransactionForm">
+                        <div style="margin-bottom: 15px;">
+                            <label>Descrição *</label>
+                            <input type="text" id="transactionDesc" required placeholder="Ex: Aluguel, Supermercado...">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label>Tipo *</label>
+                                <select id="transactionType" required>
+                                    <option value="expense">💸 Despesa</option>
+                                    <option value="income">💰 Receita</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Valor (R$) *</label>
+                                <input type="number" id="transactionAmount" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label>Data *</label>
+                                <input type="date" id="transactionDate" required>
+                            </div>
+                            <div>
+                                <label>Categoria *</label>
+                                <select id="transactionCategory" required>
+                                    <option value="">Selecione...</option>
+                                    <!-- Categorias serão carregadas aqui -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Transação</button>
+                            <button type="button" onclick="sharedDetails.cancelTransaction()" class="btn">
+                                ❌ Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="card" style="margin-top: 20px;">
+            <h3>📊 Estatísticas da Conta</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <h4>Total de Despesas</h4>
+                    <p style="font-size: 24px; color: #ff4757;" id="totalExpenses">R$ 0,00</p>
+                </div>
+                <div>
+                    <h4>Total de Receitas</h4>
+                    <p style="font-size: 24px; color: #2ed573;" id="totalIncomes">R$ 0,00</p>
+                </div>
+                <div>
+                    <h4>Saldo por Membro</h4>
+                    <p style="font-size: 24px;" id="balancePerMember">R$ 0,00</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/shared-details.js"></script>
+</body>
+
+</html>
