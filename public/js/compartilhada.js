@@ -223,10 +223,11 @@ class CompartilhadaManager {
         }).join('');
     }
 
-    openAccount(accountId) {
-        Utils.showMessage(`🔓 Abrindo conta ${accountId}...`, 'info');
-        // Aqui você pode implementar a abertura da conta em uma nova página
-        // Por exemplo: window.location.href = `shared-details.html?id=${accountId}`;
+    openAccount(accountId, accountCode) {
+        console.log(`🔓 Abrindo conta ${accountId}...`);
+
+        // Redirecionar para a tela de detalhes
+        window.location.href = `shared-details.html?id=${accountId}`;
     }
 
     shareLink(accountCode) {
