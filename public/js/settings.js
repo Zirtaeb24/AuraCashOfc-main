@@ -222,15 +222,7 @@ class SettingsManager {
         try {
             console.log('💾 Salvando preferências:', preferences);
             
-            // ✅ CORREÇÃO: Chamar API para salvar preferências
-            const resultado = await app.apiCall('/preferences', {
-                method: 'PUT',
-                body: JSON.stringify(preferences)
-            });
-
-            console.log('✅ Preferências salvas:', resultado);
-
-            // ✅ CORREÇÃO: Salvar localmente também
+            // ✅ CORREÇÃO: Salvar localmente
             this.salvarPreferenciasLocal(preferences);
             
             Utils.showMessage('✅ Preferências salvas com sucesso!', 'success');
@@ -367,35 +359,84 @@ class SettingsManager {
         }
 
         Utils.showLoading();
+        
+        // ✅ CORREÇÃO: Primeiro tentar deletar no servidor
+        this.deletarContaNoServidor()
+            .then(resultado => {
+                console.log('✅ Conta excluída no servidor:', resultado);
+                
+                // Limpar dados locais
+                this.limparDadosLocais();
+                
+                Utils.showMessage('✅ Conta excluída com sucesso!', 'success');
+                
+                // Redirecionar para login após 2 segundos
+                setTimeout(() => {
+                    window.location.href = '../tlogin.html';
+                }, 2000);
+            })
+            .catch(erroServidor => {
+                console.error('❌ Erro ao excluir conta no servidor:', erroServidor);
+                
+                // Perguntar se quer excluir apenas localmente
+                if (confirm('Não foi possível excluir a conta no servidor. Deseja excluir apenas os dados locais?\n\nIsso permitirá usar o app offline, mas o email continuará cadastrado no servidor.')) {
+                    this.limparDadosLocais();
+                    Utils.showMessage('✅ Dados locais excluídos! O email permanece no servidor.', 'warning');
+                    
+                    setTimeout(() => {
+                        window.location.href = '../tlogin.html';
+                    }, 2000);
+                } else {
+                    Utils.showMessage('❌ Exclusão cancelada', 'error');
+                }
+            })
+            .finally(() => {
+                Utils.hideLoading();
+            });
+    }
+
+    // ✅ NOVO MÉTODO: Deletar conta no servidor
+    async deletarContaNoServidor() {
         try {
-            console.log('🗑️ Excluindo conta...');
+            console.log('🌐 Enviando requisição para deletar conta no servidor...');
             
-            // ✅ CORREÇÃO: Limpar todos os dados locais
-            const dadosParaManter = {
-                // Manter algumas configurações básicas se desejar
-            };
-
-            // Limpar dados específicos do usuário
-            localStorage.removeItem('auraCash_transacoes');
-            localStorage.removeItem('auraCash_categorias');
-            localStorage.removeItem('auraCash_metas');
-            localStorage.removeItem('auraCash_materiais');
-            localStorage.removeItem('auraCash_preferences');
-            localStorage.removeItem('currentUser');
-
-            Utils.showMessage('✅ Conta excluída com sucesso!', 'success');
+            // Verificar se o usuário está autenticado
+            if (!app.currentUser || !app.currentUser.token) {
+                throw new Error('Usuário não autenticado');
+            }
             
-            // ✅ CORREÇÃO: Redirecionar para login após 2 segundos
-            setTimeout(() => {
-                window.location.href = '../tlogin.html';
-            }, 2000);
+            // Fazer requisição para a API deletar a conta
+            const response = await fetch('/api/deletar-conta', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${app.currentUser.token}`
+                }
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
         } catch (error) {
-            console.error('❌ Erro ao excluir conta:', error);
-            Utils.showMessage('❌ Erro ao excluir conta', 'error');
-        } finally {
-            Utils.hideLoading();
+            console.error('❌ Falha na requisição ao servidor:', error);
+            throw error;
         }
+    }
+
+    // ✅ NOVO MÉTODO: Limpar dados locais
+    limparDadosLocais() {
+        // Limpar dados específicos do usuário
+        localStorage.removeItem('auraCash_transacoes');
+        localStorage.removeItem('auraCash_categorias');
+        localStorage.removeItem('auraCash_metas');
+        localStorage.removeItem('auraCash_materiais');
+        localStorage.removeItem('auraCash_preferences');
+        localStorage.removeItem('currentUser');
+        
+        console.log('🗑️ Dados locais excluídos');
     }
 }
 
