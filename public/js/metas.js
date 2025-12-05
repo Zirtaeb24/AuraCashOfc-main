@@ -103,34 +103,75 @@ class MetasManager {
             // Buscar todas as transações usando app.apiCall()
             const transacoes = await app.apiCall('/transacoes', { method: 'GET' });
             
+            console.log('📊 Transações carregadas:', transacoes.length);
+            console.log('🎯 Meta:', meta);
+            
             // Filtrar transações da categoria e período
             const transacoesFiltradas = transacoes.filter(transacao => {
                 // Verificar se existe data na transação
-                if (!transacao.data) return false;
+                if (!transacao.data) {
+                    console.log('⚠️ Transação sem data:', transacao);
+                    return false;
+                }
                 
+                // Converter datas para objetos Date
                 const dataTransacao = new Date(transacao.data);
                 const dataInicio = new Date(meta.data_inicio);
                 const dataFim = new Date(meta.data_fim);
                 
-                // Ajustar para considerar todo o dia
-                dataInicio.setHours(0, 0, 0, 0);
-                dataFim.setHours(23, 59, 59, 999);
-                dataTransacao.setHours(12, 0, 0, 0);
+                // DEBUG: Verificar datas
+                console.log('📅 Comparando datas:', {
+                    dataTransacao: dataTransacao.toISOString(),
+                    dataInicio: dataInicio.toISOString(),
+                    dataFim: dataFim.toISOString(),
+                    categoriaTransacao: transacao.categoria_id,
+                    categoriaMeta: meta.categoria_id
+                });
                 
+                // Ajustar datas para comparar apenas a parte da data (sem horas)
+                const dataTransacaoDate = new Date(dataTransacao.getFullYear(), dataTransacao.getMonth(), dataTransacao.getDate());
+                const dataInicioDate = new Date(dataInicio.getFullYear(), dataInicio.getMonth(), dataInicio.getDate());
+                const dataFimDate = new Date(dataFim.getFullYear(), dataFim.getMonth(), dataFim.getDate());
+                
+                // Verificar se é da mesma categoria
+                // IMPORTANTE: Pode ser que transacao.categoria_id seja string e meta.categoria_id seja number ou vice-versa
                 const mesmaCategoria = transacao.categoria_id == meta.categoria_id;
-                const dentroDoPeriodo = dataTransacao >= dataInicio && dataTransacao <= dataFim;
                 
-                return mesmaCategoria && dentroDoPeriodo;
+                // Verificar se está dentro do período (inclusive nas datas de início e fim)
+                const dentroDoPeriodo = dataTransacaoDate >= dataInicioDate && dataTransacaoDate <= dataFimDate;
+                
+                // Verificar se é uma despesa (para metas de gastos)
+                const isDespesa = transacao.tipo === 'expense' || transacao.valor < 0;
+                
+                const passaFiltro = mesmaCategoria && dentroDoPeriodo && isDespesa;
+                
+                if (mesmaCategoria && dentroDoPeriodo) {
+                    console.log('✅ Transação pertence à meta:', {
+                        transacao,
+                        valor: transacao.valor,
+                        tipo: transacao.tipo,
+                        passaFiltro,
+                        dentroDoPeriodo,
+                        isDespesa
+                    });
+                }
+                
+                return passaFiltro;
             });
             
-            // Calcular total (considera que valores negativos são despesas)
+            console.log('🔍 Transações filtradas para a meta:', transacoesFiltradas);
+            
+            // Calcular total gasto na categoria (valores absolutos)
             let totalGasto = 0;
             transacoesFiltradas.forEach(transacao => {
-                // Se for despesa (negativo), converte para positivo para somar
-                if (transacao.valor < 0) {
-                    totalGasto += Math.abs(transacao.valor);
-                }
+                // Pegar valor absoluto (para despesas que são negativas)
+                const valorAbsoluto = Math.abs(transacao.valor);
+                totalGasto += valorAbsoluto;
+                console.log(`➕ Adicionando ao total: R$ ${valorAbsoluto} (original: R$ ${transacao.valor})`);
             });
+            
+            console.log('💰 Total gasto na categoria:', totalGasto);
+            console.log('🎯 Valor da meta:', meta.valor);
             
             // Calcular progresso
             let progresso = 0;
@@ -142,6 +183,8 @@ class MetasManager {
             progresso = Math.round(progresso * 10) / 10; // 1 casa decimal
             progresso = Math.min(progresso, 100); // Máximo 100%
             
+            console.log(`📈 Progresso calculado: ${progresso}%`);
+            
             return progresso;
             
         } catch (error) {
@@ -149,7 +192,6 @@ class MetasManager {
             return 0;
         }
     }
-
     async deleteMeta(id) {
         if (confirm('Tem certeza que deseja excluir esta meta?')) {
             try {
