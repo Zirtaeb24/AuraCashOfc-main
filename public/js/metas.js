@@ -78,11 +78,39 @@ class MetasManager {
         `).join('') || '<div class="small">Nenhuma meta cadastrada.</div>';
     }
 
-    calculateProgress(meta) {
-        // Exemplo: calcular progresso baseado nas transações da categoria no período
-        // Por enquanto, retornar um valor fixo
-        return 30;
+    async calculateProgress(meta) {
+        // Garantir que categoryId exista
+        const categoriaId = meta.categoryId || meta.categoria_id;
+    
+        if (!categoriaId) {
+            console.warn("Meta sem categoriaId:", meta);
+            return 0;
+        }
+    
+        let transacoes = [];
+    
+        try {
+            transacoes = await app.apiCall(`/transacoes/categoria/${categoriaId}`, { method: "GET" });
+    
+            if (!Array.isArray(transacoes)) {
+                transacoes = [];
+            }
+    
+        } catch (error) {
+            console.warn("Erro ao carregar transações da categoria:", error);
+            transacoes = [];
+        }
+    
+        // Somar valores da categoria no período
+        const total = transacoes.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+    
+        // Calcular % da meta atingida
+        const progresso = (total / meta.amount) * 100;
+    
+        // Proteger contra valores acima de 100%
+        return Math.min(100, Math.max(0, progresso));
     }
+
 
     async deleteMeta(id) {
         if (confirm('Tem certeza que deseja excluir esta meta?')) {
