@@ -163,7 +163,15 @@ const autenticarToken = (req, res, next) => {
 
 // Rotas estáticas
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'tlogin.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));  // Landing Page
+});
+
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'tlogin.html'));  // Página de login
+});
+
+app.get('/cadastro', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'tcadastro.html'));  // Página de cadastro
 });
 
 app.get('/pages/:page', (req, res) => {
