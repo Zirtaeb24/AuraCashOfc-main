@@ -78,10 +78,56 @@ class MetasManager {
         `).join('') || '<div class="small">Nenhuma meta cadastrada.</div>';
     }
 
-    calculateProgress(meta) {
-        // Exemplo: calcular progresso baseado nas transações da categoria no período
-        // Por enquanto, retornar um valor fixo
-        return 30;
+    async calculateProgress(meta) {
+        try {
+            // Buscar todas as transações
+            const transacoes = await this.apiCall('/transacoes', { method: 'GET' });
+            
+            // Filtrar transações da categoria e período
+            const transacoesFiltradas = transacoes.filter(transacao => {
+                // Verificar se existe data na transação
+                if (!transacao.data) return false;
+                
+                const dataTransacao = new Date(transacao.data);
+                const dataInicio = new Date(meta.data_inicio);
+                const dataFim = new Date(meta.data_fim);
+                
+                // Ajustar para considerar todo o dia
+                dataInicio.setHours(0, 0, 0, 0);
+                dataFim.setHours(23, 59, 59, 999);
+                dataTransacao.setHours(12, 0, 0, 0);
+                
+                const mesmaCategoria = transacao.categoria_id == meta.categoria_id;
+                const dentroDoPeriodo = dataTransacao >= dataInicio && dataTransacao <= dataFim;
+                
+                return mesmaCategoria && dentroDoPeriodo;
+            });
+            
+            // Calcular total (considera que valores negativos são despesas)
+            let totalGasto = 0;
+            transacoesFiltradas.forEach(transacao => {
+                // Se for despesa (negativo), converte para positivo para somar
+                if (transacao.valor < 0) {
+                    totalGasto += Math.abs(transacao.valor);
+                }
+            });
+            
+            // Calcular progresso
+            let progresso = 0;
+            if (meta.valor > 0) {
+                progresso = (totalGasto / meta.valor) * 100;
+            }
+            
+            // Arredondar e garantir limites
+            progresso = Math.round(progresso * 10) / 10; // 1 casa decimal
+            progresso = Math.min(progresso, 100); // Máximo 100%
+            
+            return progresso;
+            
+        } catch (error) {
+            console.error('Erro ao calcular progresso:', error);
+            return 0;
+        }
     }
 
     async deleteMeta(id) {
