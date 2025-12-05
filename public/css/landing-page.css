@@ -1,0 +1,320 @@
+/* ===========================
+   VARIÁVEIS DE COR DO AURACASH
+=========================== */
+:root {
+  --bg: #b3b3b3;
+  --primary: #f39a05;
+  --accent: #8450a7;
+  --info: #7a86ff;
+  --paper: #f5f7fb;
+  --ink: #222;
+  --radius: 18px;
+}
+
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background: #fafafa;
+}
+
+/* NAVBAR */
+.navbar {
+    background: linear-gradient(135deg, var(--accent), var(--info));
+    backdrop-filter: blur(12px);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 10;
+    padding: 15px 0;
+
+}
+
+
+.navbar .container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo img {
+    height: 45px;
+}
+
+/* BOTÕES LOGIN/CADASTRAR */
+.login-btn, .cadastro-btn {
+    text-decoration: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.login-btn {
+    border: 2px solid white;
+    color: white;
+    margin-right: 12px;
+}
+
+.cadastro-btn {
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    color: whitesmoke;
+    border: 2px solid white;
+}
+
+.cadastro-btn:hover {
+    background: #e9e9e9;
+}
+
+.navbar-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff; /* a cor que combina com seu site */
+  font-family: 'Poppins', sans-serif;
+}
+
+/* HERO – CORES DO AURACASH */
+.hero {
+    height: 75vh;
+    background: linear-gradient(135deg, var(--accent), var(--info), var(--primary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding-top: 80px;
+    color: white;
+}
+
+.hero-content h1 {
+    font-size: 42px;
+    font-weight: bold;
+}
+
+.hero-content p {
+    margin-top: 10px;
+    font-size: 18px;
+}
+
+/* BOTÃO PRINCIPAL */
+.btn-cta {
+    margin-top: 25px;
+    display: inline-block;
+    padding: 12px 26px;
+    background: white;
+    color: var(--accent);
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* COMO FUNCIONA */
+.como-funciona {
+    padding: 80px 5%;
+    text-align: center;
+}
+
+.como-funciona h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: var(--ink);
+}
+
+.funciona-box {
+    margin-top: 30px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.funciona-img {
+    width: 50%;
+    border-radius: 10px;
+}
+
+.funciona-texto h3 {
+    font-size: 22px;
+    margin-top: 15px;
+}
+
+.como-funciona-texto {
+  max-width: 700px;
+  margin: 25px auto; 
+  line-height: 1.6;
+  font-size: 17px;
+  color: var(--ink);
+  background: white;
+  padding: 25px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+
+/* CRIADORES */
+.criadores {
+    padding: 80px 5%;
+    text-align: center;
+}
+
+.criadores h2 {
+    color: var(--ink);
+}
+
+.criadores-grid {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+}
+
+.criador-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.criador-card img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.criador-card h3 {
+    margin-top: 12px;
+    color: var(--accent);
+}
+
+/* COMENTÁRIOS */
+.comentarios {
+    padding: 80px 5%;
+}
+
+.comentarios h2 {
+    color: var(--ink);
+}
+
+.comentario-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.comentario-card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+    .hero-content h1 {
+        font-size: 28px;
+    }
+
+    .funciona-box {
+        flex-direction: column;
+    }
+
+    .funciona-img {
+        width: 100%;
+    }
+
+    .comentario-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+/* ===========================
+   CARROSSEL (FUNCIONA)
+=========================== */
+
+.carousel {
+    position: relative;
+    width: 50%;
+    overflow: hidden;
+    border-radius: 10px;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.carousel-track {
+    display: flex;
+    width: 300%;
+    transition: transform 0.5s ease;
+}
+
+.carousel img {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+}
+
+/* Botões */
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.6);
+    border: none;
+    font-size: 28px;
+    padding: 8px 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.carousel-btn:hover {
+    background: rgba(255,255,255,0.85);
+}
+
+.prev {
+    left: 10px;
+}
+
+.next {
+    right: 10px;
+}
+
+/* Indicadores */
+.carousel-indicators {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.dot.active {
+    background: white;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .carousel {
+        width: 100%;
+    }
+}
