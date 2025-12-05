@@ -78,10 +78,15 @@ class MetasManager {
         `).join('') || '<div class="small">Nenhuma meta cadastrada.</div>';
     }
 
-    calculateProgress(meta) {
-        if (!meta.total_categoria) return 0;
+    async calculateProgress(meta) {
+
+        const transacoes = await app.apiCall(`/transacoes/categoria/${meta.categoryId}`, {
+            method: 'GET'
+        });
     
-        let progresso = (meta.total_categoria / meta.valor) * 100;
+        const total = transacoes.reduce((soma, t) => soma + t.valor, 0);
+    
+        let progresso = (total / meta.valor) * 100;
     
         return Math.min(progresso, 100);
     }
