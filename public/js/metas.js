@@ -1,4 +1,3 @@
-// metas.js CORRIGIDO
 class MetasManager {
     constructor() {
         this.form = document.getElementById('goalForm');
@@ -49,39 +48,60 @@ class MetasManager {
 
             this.form.reset();
             await this.loadMetas();
-            Utils.showMessage('Meta salva com sucesso!', 'success');
+            this.showMessage('Meta salva com sucesso!', 'success');
         } catch (error) {
-            Utils.showMessage('Erro ao salvar meta', 'error');
+            console.error('Erro detalhado:', error);
+            this.showMessage('Erro ao salvar meta', 'error');
         }
     }
 
     async loadMetas() {
         try {
             const metas = await app.apiCall('/metas', { method: 'GET' });
-            this.renderMetas(metas);
+            await this.renderMetas(metas);
         } catch (error) {
             console.error('Erro ao carregar metas:', error);
         }
     }
 
-    renderMetas(metas) {
-        this.list.innerHTML = metas.map(meta => `
-            <div class="card" style="margin: 10px 0; padding: 15px;">
-                <h4>${meta.categoria_nome || 'Categoria não definida'}</h4>
-                <p><strong>Meta:</strong> ${Utils.formatCurrency(meta.valor)}</p>
-                <p><strong>Período:</strong> ${Utils.formatDate(meta.data_inicio)} até ${Utils.formatDate(meta.data_fim)}</p>
-                <div class="progress">
-                    <div style="width: ${this.calculateProgress(meta)}%"></div>
+    async renderMetas(metas) {
+        let html = '';
+        
+        for (const meta of metas) {
+            const progresso = await this.calculateProgress(meta);
+            
+            html += `
+                <div class="card" style="margin: 10px 0; padding: 15px;">
+                    <h4>${meta.categoria_nome || 'Categoria não definida'}</h4>
+                    <p><strong>Meta:</strong> ${this.formatCurrency(meta.valor)}</p>
+                    <p><strong>Período:</strong> ${this.formatDate(meta.data_inicio)} até ${this.formatDate(meta.data_fim)}</p>
+                    <div class="progress" style="height: 25px; margin: 10px 0; border-radius: 5px; overflow: hidden;">
+                        <div class="progress-bar" 
+                             role="progressbar" 
+                             style="width: ${progresso}%; 
+                                    background-color: ${progresso > 100 ? '#dc3545' : (progresso > 80 ? '#ffc107' : '#28a745')};
+                                    color: ${progresso > 50 ? 'white' : 'black'};
+                                    text-align: center;
+                                    line-height: 25px;
+                                    font-weight: bold;"
+                             aria-valuenow="${progresso}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            ${progresso.toFixed(1)}%
+                        </div>
+                    </div>
+                    <button onclick="metasManager.deleteMeta(${meta.id})" class="btn btn-danger">Excluir</button>
                 </div>
-                <button onclick="metasManager.deleteMeta(${meta.id})" class="btn btn-danger">Excluir</button>
-            </div>
-        `).join('') || '<div class="small">Nenhuma meta cadastrada.</div>';
+            `;
+        }
+        
+        this.list.innerHTML = html || '<div class="small">Nenhuma meta cadastrada.</div>';
     }
 
     async calculateProgress(meta) {
         try {
-            // Buscar todas as transações
-            const transacoes = await this.apiCall('/transacoes', { method: 'GET' });
+            // Buscar todas as transações usando app.apiCall()
+            const transacoes = await app.apiCall('/transacoes', { method: 'GET' });
             
             // Filtrar transações da categoria e período
             const transacoesFiltradas = transacoes.filter(transacao => {
@@ -135,11 +155,39 @@ class MetasManager {
             try {
                 await app.apiCall(`/metas/${id}`, { method: 'DELETE' });
                 await this.loadMetas();
-                Utils.showMessage('Meta excluída!', 'success');
+                this.showMessage('Meta excluída!', 'success');
             } catch (error) {
-                Utils.showMessage('Erro ao excluir meta', 'error');
+                this.showMessage('Erro ao excluir meta', 'error');
             }
         }
+    }
+
+    formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value || 0);
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return 'Data inválida';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        } catch (error) {
+            return dateString;
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        // Implementação simples
+        const types = {
+            success: 'Sucesso',
+            error: 'Erro',
+            info: 'Informação'
+        };
+        
+        alert(`${types[type] || 'Info'}: ${message}`);
     }
 }
 
