@@ -25,7 +25,7 @@ class MetasManager {
             const select = document.getElementById('goalCategory');
             
             select.innerHTML = categorias.map(cat => 
-                `<option value="${cat.id}">${cat.nome}</option>`
+                `<option value="${cat.id}">${cat.name || cat.nome}</option>`
             ).join('');
         } catch (error) {
             console.error('Erro ao carregar categorias:', error);
@@ -34,22 +34,24 @@ class MetasManager {
 
     async saveMeta() {
         const formData = new FormData(this.form);
+    
         const meta = {
             categoryId: parseInt(formData.get('categoryId')),
-            amount: parseFloat(formData.get('amount')),
-            from: formData.get('from'),
-            to: formData.get('to')
+            valor: parseFloat(formData.get('amount')),
+            data_inicio: formData.get('from'),
+            data_fim: formData.get('to')
         };
-
+    
         try {
             await app.apiCall('/metas', {
                 method: 'POST',
                 body: JSON.stringify(meta)
             });
-
+    
             this.form.reset();
             await this.loadMetas();
             Utils.showMessage('Meta salva com sucesso!', 'success');
+    
         } catch (error) {
             Utils.showMessage('Erro ao salvar meta', 'error');
         }
