@@ -79,37 +79,37 @@ class MetasManager {
     }
 
     async calculateProgress(meta) {
-        // Garantir que categoryId exista
         const categoriaId = meta.categoryId || meta.categoria_id;
     
-        if (!categoriaId) {
-            console.warn("Meta sem categoriaId:", meta);
-            return 0;
-        }
+        if (!categoriaId) return 0;
     
         let transacoes = [];
     
         try {
-            transacoes = await app.apiCall(`/transacoes/categoria/${categoriaId}`, { method: "GET" });
+            // Carrega todas as transações
+            transacoes = await app.apiCall('/transacoes', { method: 'GET' });
     
             if (!Array.isArray(transacoes)) {
                 transacoes = [];
             }
     
         } catch (error) {
-            console.warn("Erro ao carregar transações da categoria:", error);
+            console.warn("Erro ao carregar transações:", error);
             transacoes = [];
         }
     
-        // Somar valores da categoria no período
-        const total = transacoes.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+        // Filtra só as transações da categoria da meta
+        const filtradas = transacoes.filter(t => Number(t.categoria_id) === Number(categoriaId));
     
-        // Calcular % da meta atingida
+        // Soma os valores
+        const total = filtradas.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+    
+        // Cálculo do progresso
         const progresso = (total / meta.amount) * 100;
     
-        // Proteger contra valores acima de 100%
         return Math.min(100, Math.max(0, progresso));
     }
+
 
 
     async deleteMeta(id) {
