@@ -99,7 +99,12 @@ class CompartilhadaManager {
                 window.history.replaceState({}, document.title, newUrl);
             }
 
-            Utils.showMessage('✅ Entrou na conta compartilhada: ' + resultado.conta.nome, 'success');
+            // ✅ CORREÇÃO: Verificar se resultado tem 'conta.nome' ou apenas 'message'
+            const mensagem = resultado.conta?.nome ? 
+                `✅ Entrou na conta compartilhada: ${resultado.conta.nome}` :
+                `✅ ${resultado.message || 'Entrou na conta compartilhada com sucesso!'}`;
+            
+            Utils.showMessage(mensagem, 'success');
         } catch (error) {
             console.error('❌ Erro ao entrar na conta:', error);
             Utils.showMessage('❌ ' + (error.message || 'Erro ao entrar na conta compartilhada'), 'error');
@@ -178,10 +183,22 @@ class CompartilhadaManager {
         }
 
         this.list.innerHTML = accounts.map(account => {
-            const membros = account.membros && account.membros.length > 0 ?
-                account.membros.map(m => m.nome || m).join(', ') : 'Nenhum membro adicional';
+            // ✅ CORREÇÃO: Verificar se membros é array ou string
+            let membrosTexto = 'Nenhum membro adicional';
+            if (account.membros) {
+                if (Array.isArray(account.membros)) {
+                    if (account.membros.length > 0) {
+                        membrosTexto = account.membros.map(m => 
+                            typeof m === 'object' ? (m.nome || 'Membro') : m
+                        ).join(', ');
+                    }
+                } else if (typeof account.membros === 'string') {
+                    membrosTexto = account.membros;
+                }
+            }
 
-            const dono = account.dono || 'Desconhecido';
+            const dono = account.dono || account.usuario_nome || 'Desconhecido';
+            const membersCount = account.membersCount || (account.membros && Array.isArray(account.membros) ? account.membros.length : 1);
 
             return `
             <div class="card" style="margin: 10px 0; padding: 20px;">
@@ -193,7 +210,7 @@ class CompartilhadaManager {
                         </div>
                     </div>
                     <div class="badge" style="background: var(--primary); color: white;">
-                        👥 ${account.membersCount || 1} membro(s)
+                        👥 ${membersCount} membro(s)
                     </div>
                 </div>
 
@@ -201,7 +218,7 @@ class CompartilhadaManager {
                     <strong>Dono:</strong> ${dono}
                 </div>
                 <div style="margin-top: 5px;">
-                    <strong>Membros:</strong> ${membros}
+                    <strong>Membros:</strong> ${membrosTexto}
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
