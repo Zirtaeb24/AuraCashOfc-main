@@ -25,7 +25,7 @@ class MetasManager {
             const select = document.getElementById('goalCategory');
 
             select.innerHTML = categorias.map(cat =>
-                `<option value="${cat.id}">${cat.name}</option>`
+                `<option value="${cat.id}">${cat.nome}</option>`
             ).join('');
         } catch (error) {
             console.error('Erro ao carregar categorias:', error);
