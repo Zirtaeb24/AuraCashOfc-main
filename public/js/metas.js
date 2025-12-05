@@ -64,19 +64,29 @@ class MetasManager {
         }
     }
 
-    renderMetas(metas) {
-        this.list.innerHTML = metas.map(meta => `
-            <div class="card" style="margin: 10px 0; padding: 15px;">
-                <h4>${meta.categoria_nome || 'Categoria não definida'}</h4>
-                <p><strong>Meta:</strong> ${Utils.formatCurrency(meta.valor)}</p>
-                <p><strong>Período:</strong> ${Utils.formatDate(meta.data_inicio)} até ${Utils.formatDate(meta.data_fim)}</p>
-                <div class="progress">
-                    <div style="width: ${this.calculateProgress(meta)}%"></div>
+    async renderMetas(metas) {
+    
+        let html = '';
+    
+        for (const meta of metas) {
+            const progresso = await this.calculateProgress(meta);
+    
+            html += `
+                <div class="card" style="margin: 10px 0; padding: 15px;">
+                    <h4>${meta.categoria_nome}</h4>
+                    <p><strong>Meta:</strong> ${Utils.formatCurrency(meta.valor)}</p>
+                    <p><strong>Período:</strong> ${Utils.formatDate(meta.data_inicio)} até ${Utils.formatDate(meta.data_fim)}</p>
+    
+                    <div class="progress">
+                        <div style="width: ${progresso}%"></div>
+                    </div>
                 </div>
-                <button onclick="metasManager.deleteMeta(${meta.id})" class="btn btn-danger">Excluir</button>
-            </div>
-        `).join('') || '<div class="small">Nenhuma meta cadastrada.</div>';
+            `;
+        }
+    
+        this.list.innerHTML = html;
     }
+
 
     async calculateProgress(meta) {
 
