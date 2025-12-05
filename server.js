@@ -1363,6 +1363,96 @@ app.put('/api/shared-accounts/:id', autenticarToken, async (req, res) => {
     }
 });
 
+// ================================
+// ROTA PARA DELETAR CONTA
+// ================================
+app.delete('/api/deletar-conta', autenticarToken, async (req, res) => {
+    const userId = req.user.id;
+    
+    try {
+        console.log(`🗑️ [USER ${userId}] Excluindo conta permanentemente...`);
+        
+        if (!db) {
+            // Modo arquivo JSON
+            const fs = require('fs');
+            
+            // Deletar usuário
+            const users = JSON.parse(fs.existsSync('./users.json') ? 
+                fs.readFileSync('./users.json', 'utf8') : '[]');
+            const filteredUsers = users.filter(u => u.id != userId);
+            fs.writeFileSync('./users.json', JSON.stringify(filteredUsers));
+            
+            // Deletar transações do usuário
+            const transacoes = JSON.parse(fs.existsSync('./transacoes.json') ? 
+                fs.readFileSync('./transacoes.json', 'utf8') : '[]');
+            const filteredTrans = transacoes.filter(t => t.usuario_id != userId);
+            fs.writeFileSync('./transacoes.json', JSON.stringify(filteredTrans));
+            
+            // Deletar categorias do usuário
+            const categorias = JSON.parse(fs.existsSync('./categorias.json') ? 
+                fs.readFileSync('./categorias.json', 'utf8') : '[]');
+            const filteredCats = categorias.filter(c => c.usuario_id != userId);
+            fs.writeFileSync('./categorias.json', JSON.stringify(filteredCats));
+            
+            // Deletar metas do usuário
+            const metas = JSON.parse(fs.existsSync('./metas.json') ? 
+                fs.readFileSync('./metas.json', 'utf8') : '[]');
+            const filteredMetas = metas.filter(m => m.usuario_id != userId);
+            fs.writeFileSync('./metas.json', JSON.stringify(filteredMetas));
+            
+            console.log(`✅ [USER ${userId}] Conta excluída (modo arquivo)`);
+            return res.json({ message: 'Conta e todos os dados excluídos com sucesso' });
+        }
+        
+        // Modo MySQL - FAZER EM TRANSACTION
+        const connection = await mysql.createConnection(dbConfig);
+        await connection.beginTransaction();
+        
+        try {
+            // 1. Deletar transações compartilhadas
+            await connection.execute('DELETE FROM transacoes_compartilhadas WHERE usuario_id = ?', [userId]);
+            
+            // 2. Remover de contas compartilhadas (membros)
+            await connection.execute('DELETE FROM membros_compartilhada WHERE usuario_id = ?', [userId]);
+            
+            // 3. Deletar contas compartilhadas do usuário (como dono)
+            await connection.execute('DELETE FROM contas_compartilhadas WHERE usuario_id = ?', [userId]);
+            
+            // 4. Deletar transações
+            await connection.execute('DELETE FROM transacoes WHERE usuario_id = ?', [userId]);
+            
+            // 5. Deletar metas
+            await connection.execute('DELETE FROM metas WHERE usuario_id = ?', [userId]);
+            
+            // 6. Deletar categorias
+            await connection.execute('DELETE FROM categorias WHERE usuario_id = ?', [userId]);
+            
+            // 7. Deletar materiais e produtos
+            await connection.execute('DELETE FROM materiais WHERE usuario_id = ?', [userId]);
+            await connection.execute('DELETE FROM produtos WHERE usuario_id = ?', [userId]);
+            
+            // 8. Finalmente deletar o usuário
+            await connection.execute('DELETE FROM usuarios WHERE id = ?', [userId]);
+            
+            await connection.commit();
+            console.log(`✅ [USER ${userId}] Conta excluída do MySQL`);
+            
+            res.json({ message: 'Conta e todos os dados excluídos com sucesso' });
+            
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            await connection.end();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao excluir conta:', error);
+        res.status(500).json({ error: 'Erro ao excluir conta do servidor' });
+    }
+});
+
+
 // Rotas adicionais básicas
 app.put('/api/profile', autenticarToken, (req, res) => res.json({ message: 'Perfil atualizado' }));
 app.put('/api/password', autenticarToken, (req, res) => res.json({ message: 'Senha alterada' }));
