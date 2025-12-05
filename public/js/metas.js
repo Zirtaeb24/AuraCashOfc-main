@@ -79,9 +79,11 @@ class MetasManager {
     }
 
     calculateProgress(meta) {
-        // Exemplo: calcular progresso baseado nas transações da categoria no período
-        // Por enquanto, retornar um valor fixo
-        return 30;
+        if (!meta.total_categoria) return 0;
+    
+        let progresso = (meta.total_categoria / meta.valor) * 100;
+    
+        return Math.min(progresso, 100);
     }
 
     async deleteMeta(id) {
