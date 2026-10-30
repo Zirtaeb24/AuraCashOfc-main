@@ -36,13 +36,13 @@ O sistema chegou a ser hospedado temporariamente na plataforma Railway. Atualmen
 
 ## 📸 Telas do projeto
 
-### 1. Login
-
-![Tela de Login](screenshots/tela.login.png)
-
-### 2. Cadastro
+### 1. Cadastro
 
 ![Tela de Cadastro](screenshots/tela.cadastro.png)
+
+### 2. Login
+
+![Tela de Login](screenshots/tela.login.png)
 
 ### 3. Dashboard
 
@@ -66,7 +66,7 @@ O sistema chegou a ser hospedado temporariamente na plataforma Railway. Atualmen
 
 ### 8. Conta compartilhada
 
-![Conta Compartilhada](screenshots/tela.contacompartilhada.png)
+![Conta Compartilhada](tela.contacompatilhada.png)
 
 ### 9. Empreendedor
 
