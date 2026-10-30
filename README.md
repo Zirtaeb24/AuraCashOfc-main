@@ -40,13 +40,13 @@ O sistema chegou a ser hospedado temporariamente na plataforma Railway. Atualmen
 
 ![Tela de Login](screenshots/tela.login.png)
 
-### 2. Dashboard
-
-![Tela do Dashboard](screenshots/tela.dashboard.png)
-
-### 3. Cadastro
+### 2. Cadastro
 
 ![Tela de Cadastro](screenshots/tela.cadastro.png)
+
+### 3. Dashboard
+
+![Tela do Dashboard](screenshots/tela.dashboard.png)
 
 ### 4. Transações
 
