@@ -66,7 +66,7 @@ O sistema chegou a ser hospedado temporariamente na plataforma Railway. Atualmen
 
 ### 8. Conta compartilhada
 
-![Conta Compartilhada](tela.contacompatilhada.png)
+![Conta Compartilhada](screenshots/tela.contacompatilhada.png)
 
 ### 9. Empreendedor
 
